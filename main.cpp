@@ -39,9 +39,9 @@ void display(const Mat& image, const string& title){
     waitKey(0);
 }
 
-void makeSparseImage(Mat& image, const string& pointsFileName){
-    int rows = image.rows;
-    int cols = image.cols;
+void makeSparseImage(Mat& colorImage, Mat& zImage, const string& pointsFileName){
+    int rows = colorImage.rows;
+    int cols = colorImage.cols;
     vector<SFMPoint> points;
     getSFMPoints(points,pointsFileName);
     double xMin;
@@ -57,7 +57,9 @@ void makeSparseImage(Mat& image, const string& pointsFileName){
         int xPixelCoord = round(convertScale(points[pointIndex].location().x(),xMin,xMax,0,cols));
         int yPixelCoord = round(convertScale(points[pointIndex].location().y(),yMin,yMax,0,rows));
         Vec3b color = points[pointIndex].color();
-        image.at<Vec3b>(Point(xPixelCoord,yPixelCoord)) = color;
+        colorImage.at<Vec3b>(Point(xPixelCoord,yPixelCoord)) = color;
+        Vec3b height(points[pointIndex].location().z()*-1,points[pointIndex].location().z()*-1,points[pointIndex].location().z()*-1);
+        zImage.at<Vec3b>(Point(xPixelCoord,yPixelCoord)) = height;
     }
 }
 
@@ -68,7 +70,8 @@ int main() {
     int cSearchRange = cols / 20;
     vector<SimpleCamera> cameras;
     vector<Mat> images;
-    Mat sparseImage(rows, cols, CV_8UC3, Scalar(0,0,0));
-    makeSparseImage(sparseImage, "/Users/alexhagiopol/Densify2D/points.csv");
-    display(sparseImage, "SPARSE IMAGE");
+    Mat sparseColorImage(rows, cols, CV_8UC3, Scalar(0,0,0));
+    Mat zImage(rows, cols, CV_8UC3, Scalar(0,0,0));
+    makeSparseImage(sparseColorImage, zImage, "/Users/alexhagiopol/Densify2D/points.csv");
+    display(zImage, "SPARSE IMAGE");
 }
