@@ -33,10 +33,10 @@ double convertScale(double in, double inMin, double inMax, double outMin, double
     return (in + abs(inMin))*(outMax - outMin)/(inMax - inMin) - abs(outMin);
 }
 
-void display(const Mat& image, const string& title){
+void display(const Mat& image, const string& title, const int& waitTime){
     namedWindow(title, WINDOW_AUTOSIZE );
-    imshow(title,image );
-    waitKey(0);
+    imshow(title,image);
+    waitKey(waitTime);
 }
 
 void makeSparseImage(Mat& colorImage, Mat& zImage, const string& pointsFileName){
@@ -63,15 +63,67 @@ void makeSparseImage(Mat& colorImage, Mat& zImage, const string& pointsFileName)
     }
 }
 
+Point searchForNonZeroNeighbor(const Mat& queryImage, const Point& queryLocation, const int searchWindow){
+    Point neighbor = Point(-1,-1); //return a negative location if we don't find a good candidate.
+    int startXIndex = queryLocation.x - searchWindow;
+    int startYIndex = queryLocation.y - searchWindow;
+    int endXIndex = queryLocation.x + searchWindow;
+    int endYIndex = queryLocation.y + searchWindow;
+    if ((startXIndex < 0) || (endXIndex > queryImage.cols) || (startYIndex < 0) || (endYIndex > queryImage.rows)){
+        return neighbor; //return a negative location if we don't find a good candidate.
+    }
+    Vec3b zero = Vec3b(0,0,0);
+    std::vector<Point> candidateNeighbors;
+    for (int c = startXIndex; c < endXIndex; c++){
+        for (int r = startYIndex; r < endYIndex; r++){
+            Vec3b channelValue = queryImage.at<Vec3b>(Point(c,r));
+            if (channelValue != zero){
+                candidateNeighbors.push_back(Point(c,r));
+            }
+        }
+    }
+    if (candidateNeighbors.size() == 0) return neighbor; //return a negative location if we don't find a good candidate.
+    double minDistance = 9999;
+    for (int n = 0; n < candidateNeighbors.size(); n++){
+        Point candidate = candidateNeighbors[n];
+        double distance = sqrt((candidate.x - queryLocation.x)^2 + (candidate.y - queryLocation.y)^2);
+        if (distance <= minDistance){
+            minDistance = distance;
+            neighbor = candidate;
+        }
+    }
+    cout << "query location = " << queryLocation << " neighbor location  = " << neighbor << endl;
+    return neighbor;
+}
+
 int main() {
-    int rows = 600;
-    int cols = 800;
-    int rSearchRange = rows / 20;
-    int cSearchRange = cols / 20;
+    const int rows = 300;
+    const int cols = 400;
+    const int searchWindow = 5;
     vector<SimpleCamera> cameras;
     vector<Mat> images;
     Mat sparseColorImage(rows, cols, CV_8UC3, Scalar(0,0,0));
-    Mat zImage(rows, cols, CV_8UC3, Scalar(0,0,0));
-    makeSparseImage(sparseColorImage, zImage, "/Users/alexhagiopol/Densify2D/points.csv");
-    display(zImage, "SPARSE IMAGE");
+    Mat denseColorImage(rows, cols, CV_8UC3, Scalar(0,0,0));
+    Mat sparseZImage(rows, cols, CV_8UC3, Scalar(0,0,0));
+    makeSparseImage(sparseColorImage, sparseZImage, "/Users/alexhagiopol/Densify2D/points.csv");
+    display(sparseColorImage, "SPARSE IMAGE", 1000);
+    Vec3b zero = Vec3b(0,0,0);
+    for (int r = 0; r < rows; r++){
+        std::cout << "Computing row #" << r << std::endl;
+        display(denseColorImage,"DENSE IMAGE",500);
+        for (int c = 0; c < cols; c++){
+            Vec3b channelValue = sparseZImage.at<Vec3b>(Point(c,r));
+            if (channelValue == zero){
+                Point bestNeighbor = searchForNonZeroNeighbor(sparseZImage,Point(c,r),searchWindow);
+                if (bestNeighbor != Point(-1,-1)){
+                    denseColorImage.at<Vec3b>(Point(c,r)) = sparseColorImage.at<Vec3b>(bestNeighbor);
+                }
+            } else{
+                denseColorImage.at<Vec3b>(Point(c,r)) = sparseColorImage.at<Vec3b>(Point(c,r));
+            }
+        }
+    }
+    display(denseColorImage,"DENSE IMAGE",0);
+
+
 }
