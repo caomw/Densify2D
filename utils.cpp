@@ -73,3 +73,9 @@ void getSFMPoints(vector<SFMPoint> &points, const string &csvFile) {
         points.push_back(point);
     }
 }
+
+void display(const Mat& image, const string& title, const int& waitTime){
+    namedWindow(title, WINDOW_AUTOSIZE );
+    imshow(title,image);
+    waitKey(waitTime);
+}

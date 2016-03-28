@@ -33,12 +33,6 @@ double convertScale(double in, double inMin, double inMax, double outMin, double
     return (in + abs(inMin))*(outMax - outMin)/(inMax - inMin) - abs(outMin);
 }
 
-void display(const Mat& image, const string& title, const int& waitTime){
-    namedWindow(title, WINDOW_AUTOSIZE );
-    imshow(title,image);
-    waitKey(waitTime);
-}
-
 void makeSparseImage(Mat& colorImage, Mat& zImage, const string& pointsFileName){
     int rows = colorImage.rows;
     int cols = colorImage.cols;
@@ -62,7 +56,16 @@ void makeSparseImage(Mat& colorImage, Mat& zImage, const string& pointsFileName)
         zImage.at<Vec3b>(Point(xPixelCoord,yPixelCoord)) = height;
     }
 }
+/*
+tuple<Point,Point,Point> searchForThreeNearestNeighbors((const Mat& queryImage, const Point& queryLocation, const int searchWindow){
+    tuple<Point,Point,Point> neighbors;
 
+    int startXIndex = queryLocation.x - searchWindow;
+    int startYIndex = queryLocation.y - searchWindow;
+    int endXIndex = queryLocation.x + searchWindow;
+    int endYIndex = queryLocation.y + searchWindow;
+}
+*/
 Point searchForNonZeroNeighbor(const Mat& queryImage, const Point& queryLocation, const int searchWindow){
     Point neighbor = Point(-1,-1); //return a negative location if we don't find a good candidate.
     int startXIndex = queryLocation.x - searchWindow;
@@ -124,6 +127,4 @@ int main() {
         }
     }
     display(denseColorImage,"DENSE IMAGE",0);
-
-
 }

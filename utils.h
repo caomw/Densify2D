@@ -21,6 +21,7 @@ typedef std::vector<record_t> data_t;
 void getCamerasFromCSV(std::vector<gtsam::SimpleCamera>& myCameras, const std::string& csvFile);
 void getImages(std::vector<cv::Mat>& images, int start, int end);
 void getSFMPoints(std::vector<SFMPoint> &points, const std::string &csvFile);
+void display(const cv::Mat& image, const cv::string& title, const int& waitTime);
 
 
 
