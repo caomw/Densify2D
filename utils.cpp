@@ -36,7 +36,7 @@ void getCamerasFromCSV(vector<SimpleCamera>& myCameras, const string& csvFile) {
     data_t data;
     infile >> data;
     infile.close();
-    Cal3_S2::shared_ptr K(new Cal3_S2(500, 500, 0.1, 4000 / 2, 3000 / 2)); //made up
+    Cal3_S2::shared_ptr K(new Cal3_S2(1000, 1000, 0.1, 4000 / 2, 3000 / 2)); //made up
     for (int r = 0; r < data.size(); r++) { //start at row 1 because row 0 does not contain data
         Point3 location(data[r][0], data[r][1], data[r][2]);
         Rot3 orientation(data[r][6], data[r][7], data[r][8],
@@ -51,7 +51,6 @@ void getCamerasFromCSV(vector<SimpleCamera>& myCameras, const string& csvFile) {
 void getImages(vector<Mat>& images, int start, int end) {
     for (int i = start; i <= end; i++) {
         string strFileName = "/Users/alexhagiopol/Densify2D/images/dji_%04i.jpg";
-
         char chrFileName[80]; //Name of csv file we write
         sprintf(chrFileName, strFileName.c_str(), i); //format filename
         string finalStrFileName = chrFileName;

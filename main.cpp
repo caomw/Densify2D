@@ -120,12 +120,12 @@ tuple<Point,Point,Point> searchForThreeNearestNeighbors(const Mat& queryImage, c
     double minDistance1 = 9999;
     double minDistance2 = 9999;
     double minDistance3 = 9999;
-    cout << "QUERY LOCATION = " << queryLocation << endl;
+    //cout << "QUERY LOCATION = " << queryLocation << endl;
     for (int n = 0; n < candidateNeighbors.size(); n++){
         Point candidate = candidateNeighbors[n];
 
         double distance = sqrt(pow(candidate.x - queryLocation.x,2) + pow(candidate.y - queryLocation.y,2));
-        cout << "candidate #" << n << " = " << candidate.x << ","<< candidate.y << " distance = " << distance << endl;
+        //cout << "candidate #" << n << " = " << candidate.x << ","<< candidate.y << " distance = " << distance << endl;
         if (distance < minDistance1){ //closest point
             minDistance3 = minDistance2;
             minDistance2 = minDistance1;
@@ -143,11 +143,11 @@ tuple<Point,Point,Point> searchForThreeNearestNeighbors(const Mat& queryImage, c
             get<2>(neighbors) = candidate;
         }
     }
-    cout << " neighbor 1 = " << get<0>(neighbors) << " neighbor 2 = " << get<1>(neighbors) << " neighbor 3 = " << get<2>(neighbors) << endl;
+    //cout << " neighbor 1 = " << get<0>(neighbors) << " neighbor 2 = " << get<1>(neighbors) << " neighbor 3 = " << get<2>(neighbors) << endl;
     return neighbors;
 }
 
-Vec3b computePixelColorViaProjection(const Mat& pointImage, const Point& queryLocation, const tuple<Point,Point,Point>& neighbors, const std::vector<SimpleCamera>& cameras){
+Vec3b computePixelColorViaProjection(const Mat& pointImage, const Point& queryLocation, const tuple<Point,Point,Point>& neighbors, const std::vector<SimpleCamera>& cameras, const std::vector<Mat>& images){
     //convert OpenCV 3D point representation to GTSAM 3D point representation
     Vec3d cvNeighbor1 = pointImage.at<Vec3d>(get<0>(neighbors));
     Vec3d cvNeighbor2 = pointImage.at<Vec3d>(get<1>(neighbors));
@@ -157,19 +157,26 @@ Vec3b computePixelColorViaProjection(const Mat& pointImage, const Point& queryLo
     Point3 gtsamNeighbor3(cvNeighbor3[0],cvNeighbor3[1],cvNeighbor3[2]);
     //estimate world coordinates of query point
     Point3 query3DPoint = (gtsamNeighbor1 + gtsamNeighbor2 + gtsamNeighbor3)/3; //compute average location in world
+    assert(cameras.size() == images.size() && "Must have the same number of images and cameras.");
+    std::vector<Vec3b> colors;
+    for (int c = 0; c < cameras.size(); c++){
+        Point2 projected = cameras[c].project(query3DPoint);
+        if ((projected.x() >= 0) && (projected.y() >= 0) && (projected.x() < images[c].rows) && (projected.y() < images[c].cols)){ //check that camera can see point
+            query3DPoint.print("*----------------------------------------------*\n3D POINT\n");
+            cameras[c].print("CAMERA\n");
+            projected.print("2D POINT\n");
 
-    /*
-    //cout << "Query Location = " << queryLocation << endl;
-    cout << "Neighbor 1" << get<0>(neighbors) << endl;
-    cout << "Neighbor 2" << get<1>(neighbors) << endl;
-    cout << "Neighbor 3" << get<2>(neighbors) << endl;
-    gtsamNeighbor1.print("GTSAM Neighbor 1 \n");
-    gtsamNeighbor2.print("GTSAM Neighbor 2 \n");
-    gtsamNeighbor3.print("GTSAM Neighbor 3 \n");
-    query3DPoint.print("QUERY 3D POINT \n");
-    */
-
+            colors.push_back(images[c].at<Vec3b>(Point(projected.y(),projected.x())));
+        } else {
+            query3DPoint.print("*----------------------------------------------*\nBAD 3D POINT\n");
+            cameras[c].print("BAD CAMERA\n");
+            projected.print("BAD 2D POINT\n");
+        }
+    }
     Vec3b color(0,0,0);
+    for (int c = 0; c < colors.size(); c++){
+        color = color + colors[c] / (int) colors.size();
+    }
     return color;
 }
 
@@ -179,7 +186,8 @@ int main() {
     const int searchWindow = 5;
     vector<SimpleCamera> cameras;
     vector<Mat> images;
-    getCamerasFromCSV(cameras,"Users/alexhagiopol/Densify2D/cameras.csv");
+    getCamerasFromCSV(cameras,"/Users/alexhagiopol/Densify2D/cameras.csv");
+    getImages(images,644,667);
     Mat sparseColorImage(rows, cols, CV_8UC3, Scalar(0,0,0));
     Mat denseColorImage(rows, cols, CV_8UC3, Scalar(0,0,0));
     Mat sparsePointImage(rows, cols, CV_32FC3, Scalar(0,0,0)); //use floats to store 3D points at each pixel
@@ -199,8 +207,9 @@ int main() {
                 Point bestNeighbor2 = get<1>(bestNeighbors);
                 Point bestNeighbor3 = get<2>(bestNeighbors);
                 if (get<0>(bestNeighbors) != Point(-1,-1)){ //ensure that good neighbors are found; if not leave pixel unchanged
-                    denseColorImage.at<Vec3b>(Point(c,r)) = (sparseColorImage.at<Vec3b>(bestNeighbor1)/3 + sparseColorImage.at<Vec3b>(bestNeighbor2)/3 + sparseColorImage.at<Vec3b>(bestNeighbor3)/3); //use average of 3 best neighbors
-                    //Vec3b assignedColor = computePixelColorViaProjection(sparsePointImage,Point(c,r),bestNeighbors,cameras);
+                    //denseColorImage.at<Vec3b>(Point(c,r)) = (sparseColorImage.at<Vec3b>(bestNeighbor1)/3 + sparseColorImage.at<Vec3b>(bestNeighbor2)/3 + sparseColorImage.at<Vec3b>(bestNeighbor3)/3); //use average of 3 best neighbors
+                    Vec3b assignedColor = computePixelColorViaProjection(sparsePointImage,Point(c,r),bestNeighbors,cameras, images);
+                    denseColorImage.at<Vec3b>(Point(c,r)) = assignedColor;
                 }
             } else{ //if the pixel is not blank, copy over its color into dense image
                 //cout << (double) channelValue.operator[](0) << " " << (double) channelValue.operator[](1) << " " <<  (double) channelValue.operator[](2) << endl;
