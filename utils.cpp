@@ -36,12 +36,20 @@ void getCamerasFromCSV(vector<SimpleCamera>& myCameras, const string& csvFile) {
     data_t data;
     infile >> data;
     infile.close();
-    Cal3_S2::shared_ptr K(new Cal3_S2(1000, 1000, 0.1, 4000 / 2, 3000 / 2)); //made up
+    Cal3_S2::shared_ptr K(new Cal3_S2(1200, 1200, 0.1, 4000 / 2, 3000 / 2)); //estimated by hand
     for (int r = 0; r < data.size(); r++) { //start at row 1 because row 0 does not contain data
         Point3 location(data[r][0], data[r][1], data[r][2]);
+        double yaw = data[r][3];
+        double pitch = data[r][4];
+        double roll = data[r][5];
+
+        //location.print("LOCATION: \n");
+
         Rot3 orientation(data[r][6], data[r][7], data[r][8],
                          data[r][9], data[r][10], data[r][11],
                          data[r][12], data[r][13], data[r][14]);
+
+        //orientation.print("ORIENTATION: \n");
         Pose3 pose(orientation, location);
         SimpleCamera camera(pose, *K);
         myCameras.push_back(camera);
@@ -74,7 +82,8 @@ void getSFMPoints(vector<SFMPoint> &points, const string &csvFile) {
 }
 
 void display(const Mat& image, const string& title, const int& waitTime){
-    namedWindow(title, WINDOW_AUTOSIZE );
+    namedWindow(title, WINDOW_NORMAL );
+    cv::resizeWindow(title, 1920, 1080);
     imshow(title,image);
     waitKey(waitTime);
 }

@@ -10,8 +10,8 @@ using namespace std;
 using namespace cv;
 
 int main() {
-    const int rows = 300;
-    const int cols = 400;
+    const int rows = 600;
+    const int cols = 800;
     const int searchWindow = 5;
     vector<SimpleCamera> cameras;
     vector<Mat> images;
@@ -23,12 +23,12 @@ int main() {
     vector<SFMPoint> points;
     getSFMPoints(points,"/home/alex/Densify2D/points.csv");
     makeSparseImage(sparseColorImage, sparsePointImage, points);
-    display(sparseColorImage, "SPARSE IMAGE", 0);
-    /*
+    //display(sparseColorImage, "SPARSE IMAGE", 0);
+
     Vec3b zero = Vec3b(0,0,0);
     for (int r = 0; r < rows; r++){
         std::cout << "Computing row #" << r << std::endl;
-        display(denseColorImage,"DENSE IMAGE",500);
+        //display(denseColorImage,"DENSE IMAGE",500);
         for (int c = 0; c < cols; c++){
             Vec3b channelValue = sparseColorImage.at<Vec3b>(Point(c,r));
             if (channelValue == zero){ //For ever blank pixel, compute a best color to fill in.
@@ -40,6 +40,9 @@ int main() {
                 Point bestNeighbor3 = get<2>(bestNeighbors);
                 if (get<0>(bestNeighbors) != Point(-1,-1)){ //ensure that good neighbors are found; if not leave pixel unchanged
                     //denseColorImage.at<Vec3b>(Point(c,r)) = (sparseColorImage.at<Vec3b>(bestNeighbor1)/3 + sparseColorImage.at<Vec3b>(bestNeighbor2)/3 + sparseColorImage.at<Vec3b>(bestNeighbor3)/3); //use average of 3 best neighbors
+                    //Mat copyImg = sparseColorImage;
+                    //circle(copyImg,Point(r,c),6,Scalar(0,0,255),2);
+                    //display(copyImg, "POINT IN SPARSE IMAGE", 0);
                     Vec3b assignedColor = computePixelColorViaProjection(sparsePointImage,Point(c,r),bestNeighbors,cameras, images);
                     denseColorImage.at<Vec3b>(Point(c,r)) = assignedColor;
                 }
@@ -48,7 +51,7 @@ int main() {
                 denseColorImage.at<Vec3b>(Point(c,r)) = sparseColorImage.at<Vec3b>(Point(c,r)); //copy the color from the sparse image if we have it.
             }
         }
+        display(denseColorImage,"DENSE IMAGE",100);
     }
     display(denseColorImage,"DENSE IMAGE",0);
-     */
 }

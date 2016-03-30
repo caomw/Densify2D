@@ -25,7 +25,7 @@ void makeSparseImage(Mat& colorImage, Mat& pointImage, const std::vector<SFMPoin
         Vec3b color = points[pointIndex].color();
         colorImage.at<Vec3b>(Point(xPixelCoord,yPixelCoord)) = color;
         Vec3d point(points[pointIndex].location().x(),points[pointIndex].location().y(),points[pointIndex].location().z());
-        //cout << "Storing point " << point << " at " << "(" << xPixelCoord << "," << yPixelCoord << ")" << endl;
+        //cout << "Storing point " << point << " at " << "(X:" << xPixelCoord << ",Y:" << yPixelCoord << ")" << endl;
         pointImage.at<Vec3d>(Point(xPixelCoord,yPixelCoord)) = point;
     }
 }
@@ -128,21 +128,20 @@ Vec3b computePixelColorViaProjection(const Mat& pointImage, const Point& queryLo
     Point3 gtsamNeighbor2(cvNeighbor2[0],cvNeighbor2[1],cvNeighbor2[2]);
     Point3 gtsamNeighbor3(cvNeighbor3[0],cvNeighbor3[1],cvNeighbor3[2]);
     //estimate world coordinates of query point
-    Point3 query3DPoint = (gtsamNeighbor1 + gtsamNeighbor2 + gtsamNeighbor3)/3; //compute average location in world
+    Point3 gtsamWorldPoint = (gtsamNeighbor1 + gtsamNeighbor2 + gtsamNeighbor3)/3; //compute average location in world
     assert(cameras.size() == images.size() && "Must have the same number of images and cameras.");
     std::vector<Vec3b> colors;
     for (int c = 0; c < cameras.size(); c++){
-        Point2 projected = cameras[c].project(query3DPoint);
-        if ((projected.x() >= 0) && (projected.y() >= 0) && (projected.x() < images[c].rows) && (projected.y() < images[c].cols)){ //check that camera can see point
-            query3DPoint.print("*----------------------------------------------*\n3D POINT\n");
-            cameras[c].print("CAMERA\n");
-            projected.print("2D POINT\n");
-
-            colors.push_back(images[c].at<Vec3b>(Point(projected.y(),projected.x())));
-        } else {
-            query3DPoint.print("*----------------------------------------------*\nBAD 3D POINT\n");
-            cameras[c].print("BAD CAMERA\n");
-            projected.print("BAD 2D POINT\n");
+        Point2 gtsamProjectedImageLocation = cameras[c].project(gtsamWorldPoint);
+        Point rcProjectedImageLocation(gtsamProjectedImageLocation.x(),gtsamProjectedImageLocation.y());
+        Point xyProjectedImageLocation(floor(gtsamProjectedImageLocation.y()),floor(gtsamProjectedImageLocation.x()));
+        if ((gtsamProjectedImageLocation.x() >= 0) && (gtsamProjectedImageLocation.y() >= 0) && (gtsamProjectedImageLocation.x() < images[c].cols) && (gtsamProjectedImageLocation.y() < images[c].rows)){ //check that camera can see point
+            gtsamProjectedImageLocation.print("2D POINT\n");
+            cout << xyProjectedImageLocation << endl;
+            colors.push_back(images[c].at<Vec3b>(xyProjectedImageLocation));
+            Mat copyImg = images[c];
+            circle(copyImg,rcProjectedImageLocation,20,Scalar(0,0,255),8); //draw a circle where that point ought to be
+            //display(copyImg, "POINT IN INPUT IMAGE", 0);
         }
     }
     Vec3b color(0,0,0);
