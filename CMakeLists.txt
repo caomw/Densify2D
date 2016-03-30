@@ -18,10 +18,20 @@ include_directories(${OpenCV_INCLUDE_DIRS})
 
 add_executable(Densify2D
 		main.cpp
-		utils.h utils.cpp SFMPoint.h)
+		utils.h utils.cpp SFMPoint.h imageProcessing.h imageProcessing.cpp)
+
+add_executable(tests
+		tests.cpp
+		utils.h utils.cpp SFMPoint.h imageProcessing.h imageProcessing.cpp )
 
 target_link_libraries(Densify2D
 		${ALL_LIBS}
 		gtsam
 		${OpenCV_LIBS}
 )
+
+target_link_libraries(tests
+		${ALL_LIBS}
+		gtsam
+		${OpenCV_LIBS}
+		)

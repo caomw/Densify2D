@@ -50,7 +50,7 @@ void getCamerasFromCSV(vector<SimpleCamera>& myCameras, const string& csvFile) {
 
 void getImages(vector<Mat>& images, int start, int end) {
     for (int i = start; i <= end; i++) {
-        string strFileName = "/Users/alexhagiopol/Densify2D/images/dji_%04i.jpg";
+        string strFileName = "/home/alex/Densify2D/images/dji_%04i.jpg";
         char chrFileName[80]; //Name of csv file we write
         sprintf(chrFileName, strFileName.c_str(), i); //format filename
         string finalStrFileName = chrFileName;
@@ -77,4 +77,29 @@ void display(const Mat& image, const string& title, const int& waitTime){
     namedWindow(title, WINDOW_AUTOSIZE );
     imshow(title,image);
     waitKey(waitTime);
+}
+
+void findXYZMinMax(const vector<SFMPoint>& points, double& xMin, double& xMax, double& yMin, double& yMax, double& zMin, double& zMax){
+    xMin = 9999;
+    yMin = 9999;
+    zMin = 9999;
+    xMax = -9999;
+    yMax = -9999;
+    zMax = -9999;
+    for (int i = 0; i < points.size(); i++){
+        double x = points[i].location().x();
+        double y = points[i].location().y();
+        double z = points[i].location().z();
+        if (x > xMax) xMax = x;
+        if (x < xMin) xMin = x;
+        if (y > yMax) yMax = y;
+        if (y < yMin) yMin = y;
+        if (z > zMax) zMax = z;
+        if (z < zMin) zMin = z;
+    }
+}
+
+//convert a number "in" from the (inMin, inMax) scale to the (outMin, outMax) scale
+double convertScale(double in, double inMin, double inMax, double outMin, double outMax){
+    return (in + abs(inMin))*(outMax - outMin)/(inMax - inMin) - abs(outMin);
 }
